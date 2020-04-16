@@ -41,6 +41,8 @@ app.get('/add', showAddTaskForm);
 app.post('/add', addTask);
 app.delete('/tasks/:task_id', deleteOneTask);
 
+app.get('/tasks/:task_id/edit', editOneTask);
+
 app.get('/books', require('./modules/books'));
 
 app.get('*', (req, res) => res.status(404).send('This route does not exist'));
@@ -144,6 +146,23 @@ function deleteOneTask(request, response) {
       response.redirect('/');
     })
     .catch(err => handleError(err, response));
+}
+
+function editOneTask(request, response) {
+  const { task_id } = request.params;
+  const SQL = `
+    SELECT *
+    FROM Tasks
+    WHERE Id = $1
+  `;
+  client.query(SQL, [task_id])
+    .then(results => {
+      const task = results.rows[0];
+      const viewModel = {
+        task
+      };
+      response.render('pages/edit-view', viewModel);
+    })
 }
 
 function handleError(err, response) {
