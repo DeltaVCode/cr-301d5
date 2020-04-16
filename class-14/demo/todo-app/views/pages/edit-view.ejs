@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../layout/head') %>
+  </head>
+  <body>
+    <%- include('../layout/header') %>
+    <main>
+      <section class="create-view container">
+        <h2 class="view-title">Edit Task <%= task.id %></h2>
+        <form id="update-form" action="/tasks/<%= task.id %>?_method=PUT" method="post">
+          <fieldset>
+            <legend>Add a task</legend>
+            <input type="text" name="title"
+              value="<%= task.title %>"
+              placeholder="Task">
+            <textarea name="description"
+              placeholder="Description of the task" cols="30" rows="10"><%= task.description %></textarea>
+            <input type="text" name="category"
+              value="<%= task.category %>"
+              placeholder="Category">
+            <input type="text" name="contact"
+              value="<%= task.contact %>"
+              placeholder="Contact Person">
+            <input type="text" name="status" value="<%= task.status %>" placeholder="Status">
+            <button type="submit">Update This Task</button>
+          </fieldset>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

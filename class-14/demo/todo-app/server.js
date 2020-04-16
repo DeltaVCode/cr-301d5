@@ -36,10 +36,12 @@ app.set('view engine', 'ejs');
 
 // API Routes
 app.get('/', getTasks);
-app.get('/tasks/:task_id', getOneTask);
 app.get('/add', showAddTaskForm);
 app.post('/add', addTask);
+
+app.get('/tasks/:task_id', getOneTask);
 app.delete('/tasks/:task_id', deleteOneTask);
+app.put('/tasks/:task_id', updateOneTask);
 
 app.get('/tasks/:task_id/edit', editOneTask);
 
@@ -163,6 +165,27 @@ function editOneTask(request, response) {
       };
       response.render('pages/edit-view', viewModel);
     })
+}
+
+function updateOneTask(request, response, next) {
+  const { task_id } = request.params;
+  const { title, description, category, contact, status } = request.body;
+
+  const SQL = `
+    UPDATE Tasks SET
+      Title = $1,
+      Description = $2,
+      Category = $3,
+      Contact = $4,
+      Status = $5
+    WHERE Id = $6
+  `;
+  const parameters = [title, description, category, contact, status, task_id];
+  client.query(SQL, parameters)
+    .then(() => {
+      response.redirect(`/tasks/${task_id}`);
+    })
+    .catch(next);
 }
 
 function handleError(err, response) {
