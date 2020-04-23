@@ -93,8 +93,10 @@ client.connect()
 function getTasks(request, response) {
   const { sort_by } = request.query;
   const SQL = `
-    SELECT *
-    FROM Tasks
+    SELECT t.*, u.username
+    FROM Tasks AS t
+    INNER JOIN Users AS u
+      ON t.user_id = u.id
     ORDER BY $1 ASC;
   `;
 
@@ -116,9 +118,11 @@ function getOneTask(request, response) {
   const { task_id } = request.params;
 
   const SQL = `
-    SELECT *
-    FROM Tasks
-    WHERE id = $1
+    SELECT t.*, u.username
+    FROM Tasks AS t
+    INNER JOIN Users AS u
+      ON t.user_id = u.id
+    WHERE t.id = $1
     LIMIT 1;
   `;
 
