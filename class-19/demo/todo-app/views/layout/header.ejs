@@ -7,6 +7,12 @@
     <ul>
       <li><a href="/">View All Tasks</a></li>
       <li><a href="/add">Add a New Task</a></li>
+      <% if (!user.id) { %>
+        <li><a href="/register">Register</a></li>
+        <li><a href="/login">Log In</a></li>
+      <% } else { %>
+        <li><form action="/logout" method="POST"><button>Log Out</button></form></li>
+      <% } %>
     </ul>
   </nav>
 </header>
