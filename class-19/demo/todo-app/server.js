@@ -5,6 +5,7 @@ require('dotenv').config();
 
 // Application Dependencies
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const methodOverride = require('method-override');
 const pg = require('pg');
 
@@ -25,6 +26,24 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // JSON body parser
 
 app.use(methodOverride('_method'));
+
+app.use(cookieParser());
+app.use((request, response, next) => {
+  try {
+    const { user } = request.cookies;
+    request.user = user && JSON.parse(user) || {};
+    console.log('user', request.user);
+  }
+  catch (err) {
+    console.warn('error parsing user cookie', err);
+    request.user = {};
+  }
+
+  // Available in EJS views
+  response.locals.user = request.user;
+
+  next();
+});
 
 // Specify a directory for static resources
 app.use(express.static('./public'));
@@ -47,6 +66,13 @@ app.get('/tasks/:task_id/edit', editOneTask);
 
 app.get('/books', require('./modules/books'));
 
+app.get('/register', showRegister);
+app.post('/register', createUser);
+
+app.get('/login', showLogin);
+app.post('/login', doLogin);
+app.post('/logout', doLogout);
+
 app.get('*', (req, res) => res.status(404).send('This route does not exist'));
 
 // Error Handler Middleware
@@ -67,17 +93,17 @@ client.connect()
 function getTasks(request, response) {
   const { sort_by } = request.query;
   const SQL = `
-    SELECT *
-    FROM Tasks
+    SELECT t.*, u.username
+    FROM Tasks AS t
+    INNER JOIN Users AS u
+      ON t.user_id = u.id
     ORDER BY $1 ASC;
   `;
 
   client.query(SQL, [sort_by || 'due'])
     .then(results => {
-      const { rowCount, rows } = results;
-      console.log('/ db result', rows);
+      const { rows } = results;
 
-      // response.send(rows);
       response.render('index', {
         tasks: rows
       });
@@ -92,9 +118,11 @@ function getOneTask(request, response) {
   const { task_id } = request.params;
 
   const SQL = `
-    SELECT *
-    FROM Tasks
-    WHERE id = $1
+    SELECT t.*, u.username
+    FROM Tasks AS t
+    INNER JOIN Users AS u
+      ON t.user_id = u.id
+    WHERE t.id = $1
     LIMIT 1;
   `;
 
@@ -122,11 +150,11 @@ function addTask(request, response) {
   const { title, description, category, contact, status } = request.body;
 
   const SQL = `
-    INSERT INTO tasks (title, description, category, contact, status)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO tasks (title, description, category, contact, status, user_id)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING Id
   `;
-  const values = [title, description, category, contact, status];
+  const values = [title, description, category, contact, status, request.user.id];
 
   // POST - REDIRECT - GET
   client.query(SQL, values)
@@ -142,8 +170,9 @@ function deleteOneTask(request, response) {
   const SQL = `
     DELETE FROM Tasks
     WHERE Id = $1
+    AND user_id = $2
   `
-  client.query(SQL, [request.params.task_id])
+  client.query(SQL, [request.params.task_id, request.user.id])
     .then(() => {
       response.redirect('/');
     })
@@ -156,8 +185,9 @@ function editOneTask(request, response) {
     SELECT *
     FROM Tasks
     WHERE Id = $1
+    AND user_id = $2
   `;
-  client.query(SQL, [task_id])
+  client.query(SQL, [task_id, request.user.id])
     .then(results => {
       const task = results.rows[0];
       const viewModel = {
@@ -179,13 +209,68 @@ function updateOneTask(request, response, next) {
       Contact = $4,
       Status = $5
     WHERE Id = $6
+    AND user_id = $7
   `;
-  const parameters = [title, description, category, contact, status, task_id];
+  const parameters = [title, description, category, contact, status, task_id, request.user.id];
   client.query(SQL, parameters)
     .then(() => {
       response.redirect(`/tasks/${task_id}`);
     })
     .catch(next);
+}
+
+function showRegister(request, response) {
+  response.render('pages/register');
+}
+
+function createUser(request, response) {
+  const { username } = request.body;
+  const SQL = `
+    INSERT INTO users (username)
+    VALUES ($1)
+    RETURNING id, username;
+  `;
+  client.query(SQL, [username])
+    .then(results => {
+      let { rows } = results;
+      let user = rows[0];
+
+      response.cookie('user', JSON.stringify(user));
+      response.redirect('/');
+    })
+    .catch(err => handleError(err, response));
+}
+
+function showLogin(request, response) {
+  response.render('pages/login');
+}
+
+function doLogin(request, response) {
+  const { username } = request.body;
+  const SQL = `
+    SELECT id, username FROM users
+    WHERE username = $1;
+  `;
+  client.query(SQL, [username])
+    .then(results => {
+      let { rows } = results;
+      let user = rows[0];
+
+      if (!user) {
+        response.status(400)
+          .render('pages/error-view', { error: 'User not found!' });
+        return;
+      }
+
+      response.cookie('user', JSON.stringify(user));
+      response.redirect('/');
+    })
+    .catch(err => handleError(err, response));
+}
+
+function doLogout(request, response) {
+  response.clearCookie('user');
+  response.redirect('/');
 }
 
 function handleError(err, response) {

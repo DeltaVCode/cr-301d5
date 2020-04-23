@@ -9,7 +9,17 @@ label, input {
   margin: 10px;
 }
 
-button {
+nav a,
+nav button {
+  border: none;
+  padding: 0;
+  font-size: 1em;
+  text-decoration: underline;
+  color: darkblue;
+  cursor: pointer;
+}
+
+main button {
   color: white;
   background: blue;
   padding: 10px;
