@@ -6,6 +6,7 @@
   <body>
     <%- include('./layout/header') %>
     <main>
+    <h2>Tasks for <%= user.username %></h2>
     <section class="task-view container">
       <ul>
         <% tasks.forEach(task => { %>

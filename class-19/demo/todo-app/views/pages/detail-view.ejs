@@ -16,12 +16,14 @@
             <p>Category: <%= task.category %></p>
             <p>Complete this task by <%= task.due %></p>
 
+            <% if (user.id === task.user_id) { %>
             <!-- method override -->
             <form action="/tasks/<%= task.id %>?_method=DELETE" method="POST">
               <button>DELETE</button>
             </form>
 
             <a href="/tasks/<%= task.id %>/edit">EDIT</a>
+            <% } %>
           </li>
         </ul>
       </section>

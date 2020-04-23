@@ -95,11 +95,10 @@ function getTasks(request, response) {
   const SQL = `
     SELECT *
     FROM Tasks
-    WHERE user_id = $2
     ORDER BY $1 ASC;
   `;
 
-  client.query(SQL, [sort_by || 'due', request.user.id])
+  client.query(SQL, [sort_by || 'due'])
     .then(results => {
       const { rows } = results;
 
@@ -120,11 +119,10 @@ function getOneTask(request, response) {
     SELECT *
     FROM Tasks
     WHERE id = $1
-    AND user_id = $2
     LIMIT 1;
   `;
 
-  client.query(SQL, [task_id, request.user.id])
+  client.query(SQL, [task_id])
     .then(results => {
       const { rows } = results;
 
