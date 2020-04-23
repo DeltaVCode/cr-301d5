@@ -4,6 +4,7 @@
   "description": "",
   "main": "server.js",
   "dependencies": {
+    "cookie-parser": "^1.4.5",
     "cors": "^2.8.4",
     "dotenv": "^6.1.0",
     "ejs": "^2.6.1",

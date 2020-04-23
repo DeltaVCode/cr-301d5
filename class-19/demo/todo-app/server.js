@@ -5,6 +5,7 @@ require('dotenv').config();
 
 // Application Dependencies
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const methodOverride = require('method-override');
 const pg = require('pg');
 
@@ -25,6 +26,24 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // JSON body parser
 
 app.use(methodOverride('_method'));
+
+app.use(cookieParser());
+app.use((request, response, next) => {
+  try {
+    const { user } = request.cookies;
+    request.user = user && JSON.parse(user) || {};
+    console.log('user', request.user);
+  }
+  catch (err) {
+    console.warn('error parsing user cookie', err);
+    request.user = {};
+  }
+
+  // Available in EJS views
+  response.locals.user = request.user;
+
+  next();
+});
 
 // Specify a directory for static resources
 app.use(express.static('./public'));
@@ -202,9 +221,14 @@ function createUser(request, response) {
   const SQL = `
     INSERT INTO users (username)
     VALUES ($1)
+    RETURNING id, username;
   `;
   client.query(SQL, [username])
     .then(results => {
+      let { rows } = results;
+      let user = rows[0];
+
+      response.cookie('user', JSON.stringify(user));
       response.redirect('/');
     })
     .catch(err => handleError(err, response));
@@ -231,12 +255,14 @@ function doLogin(request, response) {
         return;
       }
 
+      response.cookie('user', JSON.stringify(user));
       response.redirect('/');
     })
     .catch(err => handleError(err, response));
 }
 
 function doLogout(request, response) {
+  response.clearCookie('user');
   response.redirect('/');
 }
 
