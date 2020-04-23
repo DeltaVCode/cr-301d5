@@ -47,6 +47,13 @@ app.get('/tasks/:task_id/edit', editOneTask);
 
 app.get('/books', require('./modules/books'));
 
+app.get('/register', showRegister);
+app.post('/register', createUser);
+
+app.get('/login', showLogin);
+app.post('/login', doLogin);
+app.post('/logout', doLogout);
+
 app.get('*', (req, res) => res.status(404).send('This route does not exist'));
 
 // Error Handler Middleware
@@ -184,6 +191,53 @@ function updateOneTask(request, response, next) {
       response.redirect(`/tasks/${task_id}`);
     })
     .catch(next);
+}
+
+function showRegister(request, response) {
+  response.render('pages/register');
+}
+
+function createUser(request, response) {
+  const { username } = request.body;
+  const SQL = `
+    INSERT INTO users (username)
+    VALUES ($1)
+  `;
+  client.query(SQL, [username])
+    .then(results => {
+      response.redirect('/');
+    })
+    .catch(err => handleError(err, response));
+}
+
+function showLogin(request, response) {
+  response.render('pages/login');
+}
+
+function doLogin(request, response) {
+  const { username } = request.body;
+  const SQL = `
+    SELECT id, username FROM users
+    WHERE username = $1;
+  `;
+  client.query(SQL, [username])
+    .then(results => {
+      let { rows } = results;
+      let user = rows[0];
+
+      if (!user) {
+        response.status(400)
+          .render('pages/error-view', { error: 'User not found!' });
+        return;
+      }
+
+      response.redirect('/');
+    })
+    .catch(err => handleError(err, response));
+}
+
+function doLogout(request, response) {
+  response.redirect('/');
 }
 
 function handleError(err, response) {
