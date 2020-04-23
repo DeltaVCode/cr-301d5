@@ -74,10 +74,8 @@ function getTasks(request, response) {
 
   client.query(SQL, [sort_by || 'due'])
     .then(results => {
-      const { rowCount, rows } = results;
-      console.log('/ db result', rows);
+      const { rows } = results;
 
-      // response.send(rows);
       response.render('index', {
         tasks: rows
       });
